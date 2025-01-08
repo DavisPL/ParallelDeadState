@@ -1,0 +1,27 @@
+\section{Prove}
+\begin{theorem}
+    Batch $(V_i, E_i)$ can be processed in parallel in 
+    fork-join model with \\
+    
+    * amortized $O(|V_i|\log M)$ work \\ 
+
+    * amortized $O(log|V_i|\log M)$ span w.h.p if input graph is chosen randomly. \\
+
+    in the worst case, $O(V_i\log M)$ span.
+\end{theorem}
+
+\begin{proof}
+    In the sequential incremental algorithm for dead state detection\ref{cav2023Inc},
+    they designed a euler tour tree data structure to maintain a forest that every top of a tree
+    is an open state, and the rest vertices in this tree is an unknown state with amortized $O(\log M)$ 
+    complexity per update.
+
+    In our algorithm, we use a parallel tree data structure \ref{ppopp2018pam}
+    to handle concurrent update in euler tour tree. For each batch, we first update
+    the new edges and let the closed nodes fetch for the modifications in the Euler tour tree
+    in parallel, which is $O(|V_i|)$ work and $O(\log |V_i|)$ span for forking
+    threads. Then, for the batch update, the whole batch takes $O(\log|V_i|)$ time.
+    After that, we will have a new closing node batch that requires batch update.
+    Since the tree has at most $\log|V_i|$ depth, we at most have $\log|V_i|$ rounds in each batch update.
+    
+\end{proof}
