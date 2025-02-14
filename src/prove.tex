@@ -10,7 +10,7 @@
         $x \gets UF.find(u), y\gets UF.find(v)$
         \If {$Status(x) \neq Live$} {
             $\mbox{append } (u,v) \mbox{ to } res(x)$ \\
-            $\mbox{append } (u,v) \mbox{ to } bck(y)$ 
+            $\mbox{append } (u,v) \mbox{ to } bck(y)$
         }
     }
     \parForEach {$v\in V$}{
@@ -39,8 +39,8 @@
     }
 \end{algorithm}
 \begin{theorem}
-    Algorithm 1 is correct, and batch $(V_i, E_i)$ can be processed in parallel in 
-    fork-join model with $O(|E|\log M)$ work and polylog span w.h.p if input graph is chosen randomly. 
+    Algorithm 1 is correct, and batch $(V_i, E_i)$ can be processed in parallel in
+    fork-join model with $O(|E|\log M)$ work and polylog span w.h.p if input graph is chosen randomly.
 \end{theorem}
 
 \begin{proof}
@@ -49,5 +49,5 @@
 
     Then, Inside the par for each vertex in possible dead set, accessing
 
-    # How to show the correctness of a certain algorithm?
+    % # How to show the correctness of a certain algorithm?
 \end{proof}
