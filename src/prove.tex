@@ -1,4 +1,43 @@
 \section{Prove}
+\begin{algorithm}[H]
+    \caption{Parallel Dead-state Detection}
+    \KwIn{$G \mbox{ the original graph}, G^*=(V^*, E^*) \mbox{ the new inserted edges and vertices}, \overline V \mbox{ the closed vertices}$}
+    $\mbox{UF: a union-find data structure over }V$ \\
+    $\mbox{EF: a union-find datastructure providing path to living verticies}$ \\
+    \KwOut{A set of dead states}
+    \SetKwFor{parForEach}{ParallelForEach}{do}{endfor}
+    \parForEach{$e=(u,v)\in E^*$}{
+        $x \gets UF.find(u), y\gets UF.find(v)$
+        \If {$Status(x) \neq Live$} {
+            $\mbox{append } (u,v) \mbox{ to } res(x)$ \\
+            $\mbox{append } (u,v) \mbox{ to } bck(y)$ 
+        }
+    }
+    \parForEach {$v\in V$}{
+        $p\gets EF.find(u)$ \\
+        \If{$p \in \overline V$} {add $v$ to $\overline V$}
+    }
+    \parForEach{$v\in \overline V$}{
+        set $v$'s priority as a random value\\
+        $y \gets UF.find(v)$
+        \If{$status(y) \neq Open$}{set $v$'s priority to $0$;Return}
+        \While{$res(y) \neq \emptyset$}{
+            $pop (v,w) $ from $res(y)$; $z\gets UF.find(w)$ \\
+            \While{$z$ has higher priority} {}
+            \If{$status(z) = Dead$} {continue}
+            \eIf{$EF.connected(u,v)$}{$merge(y,z)$}{
+                $status(y) \gets unknown; succ(y) \gets z$ \\
+                $EF.add(v,w)$; set $v$'s priority to $0$, return;
+            }
+        }
+        $status(y) \gets Dead$
+    }
+    \parForEach{$v\in V$}{
+        \If{$status(UF.ancestor(y))$}{
+            output $v$ is dead.
+        }
+    }
+\end{algorithm}
 \begin{theorem}
     Batch $(V_i, E_i)$ can be processed in parallel in 
     fork-join model with \\
