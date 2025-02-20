@@ -15,14 +15,15 @@
     }
     \parForEach {$v\in V$}{
         $p\gets EF.find(u)$ \\
-        \If{$p \in \overline V$} {add $v$ to $\overline V$}
+        \If{$p \in \overline V$} {add $v$ to $\overline V$, $EF.setsucc{v,v}$}
     }
     \parForEach{$v\in \overline V$}{
         set $v$'s priority as a random value\\
         $y \gets UF.find(v)$
         \If{$status(y) \neq Open$}{set $v$'s priority to $0$;Return}
         \While{$res(y) \neq \emptyset$}{
-            $pop (v,w) $ from $res(y)$; $z\gets UF.find(w)$ \\
+            $pop (v,w) $ from $res(y)$; \\ % TODO: we should maintain the top edge be the edge in EF for v as well
+            $z\gets UF.find(w)$ \\
             \While{$z$ has higher priority} {}
             \If{$status(z) = Dead$} {continue}
             \eIf{$EF.connected(u,v)$}{$merge(y,z)$}{
@@ -30,7 +31,7 @@
                 $EF.add(v,w)$; set $v$'s priority to $0$, return;
             }
         }
-        $status(y) \gets Dead$
+        $status(y) \gets Dead$, set $v$'s priority to $0$.
     }
     \parForEach{$v\in V$}{
         \If{$status(UF.ancestor(y))$}{
