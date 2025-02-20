@@ -1,4 +1,4 @@
-\section{Prove}
+
 \begin{algorithm}[H]
     \caption{Parallel Dead-state Detection}
     \KwIn{$G \mbox{ the original graph}, G^*=(V^*, E^*) \mbox{ the new inserted edges and vertices}, \overline V \mbox{ the closed vertices}$}
@@ -38,17 +38,33 @@
             output $v$ is dead.
         }
     }
+    \label{alg:parallel_dead_state_detection}
 \end{algorithm}
-\begin{theorem}
-    Algorithm 1 is correct, and batch $(V_i, E_i)$ can be processed in parallel in
-    fork-join model with $O(|E|\log M)$ work and polylog span w.h.p if input graph is chosen randomly.
-\end{theorem}
+\section{Parallel Dead-state Detection}
+Dead states occur when certain vertices in a graph cannot reach any living vertices, indicating that they are effectively "dead" in terms of computation. In \ref{cav2023Inc} we have introduced a sequential lograthmic algorithm for dead state detection with certain input, and here we present a parallel algorithm for the same problem. The parallel algorithm is based on the sequential algorithm, and we will first introduce the sequential algorithm and then present the parallel algorithm.
 
-\begin{proof}
-    In fork-join model, each parallel for each loop takes lograthmic time to create thread, so for the first and second parallel
-    for each loop it takes $O(\log |E|+\log|V|)$ time to finish.
+\subsection{Problem description}
+An incremental digraph is a sequence of directed graphs $G_0, G_1, \ldots, G_t$ where each $G_i$ is obtained from $G_{i-1}$ by adding a batch $\{\overline V, \overline E\}$ of new vertices and some edges. In a \textsl{guided} incremental graph, we also include updates $C(u)$ labeling a state as \textsl{closed}, meaning that they will not receive any further outgoing edges.
 
-    Then, Inside the par for each vertex in possible dead set, accessing
+\begin{definition}
+    Define a \textsl{guided batch incremental digraph} to be a sequence of updates, where each update contains such a batch $\{\overline V, \overline E\}$ and a set of closed vertices $\overline C$.
 
-    % # How to show the correctness of a certain algorithm?
-\end{proof}
+    \begin{enumerate}
+        \item a set of new directed edge $\overline E$.
+        \item a set of vertex $T(u)$ indicating each u is \textsl{terminal}.
+        \item a set of label $C(u)$ indicating each u is \textsl{closed}.
+    \end{enumerate}
+\end{definition}
+
+\begin{table}
+    \begin{tabular}{l|l}
+        \hline
+        Live & Some reachable state from $u$ is terminal. \\
+        Dead & All reachable state from $u$ are closed and not terminal. \\
+        Unknown & $u$ is closed but not live or dead. \\
+        Open & $u$ is not live and not closed. \\
+        \hline
+    \end{tabular}
+    \caption{Status of a vertex}
+    \label{tab:status}
+\end{table}
