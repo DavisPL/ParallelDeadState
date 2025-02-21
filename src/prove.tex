@@ -27,8 +27,14 @@
             \While{$z$ has higher priority} {}
             \If{$status(z) = Dead$} {continue}
             \eIf{$EF.connected(u,v)$}{$merge(y,z)$}{
-                $status(y) \gets unknown; succ(y) \gets z$ \\
-                $EF.add(v,w)$; set $v$'s priority to $0$, return;
+                $status(y) \gets unknown; succ(y) \gets z$; \\
+                $EF.add(v,w)$; set $v$'s priority to $0$;
+                \While{$EF.find(u)\mbox{ is not live}$}{
+                    \If{$EF.find(u)\mbox{ is dead}$}{
+                        $EF.setsucc{v,v}$; continue;
+                    }
+                } 
+                return;
             }
         }
         $status(y) \gets Dead$, set $v$'s priority to $0$.
@@ -41,13 +47,13 @@
     \label{alg:parallel_dead_state_detection}
 \end{algorithm}
 \section{Parallel Dead-state Detection}
-Dead states occur when certain vertices in a graph cannot reach any living vertices, indicating that they are effectively "dead" in terms of computation. In \ref{cav2023Inc} we have introduced a sequential lograthmic algorithm for dead state detection with certain input, and here we present a parallel algorithm for the same problem. The parallel algorithm is based on the sequential algorithm, and we will first introduce the sequential algorithm and then present the parallel algorithm.
+Dead states occur when certain vertices in a graph cannot reach any living vertices, indicating that they are effectively "dead" in terms of computation. In sequential incremental dead state detection cav23 we have introduced a sequential lograthmic algorithm for dead state detection with certain input, and here we present a parallel algorithm for the same problem. The parallel algorithm is based on the sequential algorithm, and we will first introduce the sequential algorithm and then present the parallel algorithm.
 
 \subsection{Problem description}
-An incremental digraph is a sequence of directed graphs $G_0, G_1, \ldots, G_t$ where each $G_i$ is obtained from $G_{i-1}$ by adding a batch $\{\overline V, \overline E\}$ of new vertices and some edges. In a \textsl{guided} incremental graph, we also include updates $C(u)$ labeling a state as \textsl{closed}, meaning that they will not receive any further outgoing edges.
+An incremental batch digraph is a sequence of directed graphs $G_0, G_1, \ldots, G_t$ where each $G_i$ is obtained from $G_{i-1}$ by adding a batch $\{\overline V, \overline E\}$ of new vertices and some edges. In a \textsl{guided} incremental graph, we also include updates $C(u)$ labeling a state as \textsl{closed}, meaning that they will not receive any further outgoing edges.
 
 \begin{definition}
-    Define a \textsl{guided batch incremental digraph} to be a sequence of updates, where each update contains such a batch $\{\overline V, \overline E\}$ and a set of closed vertices $\overline C$.
+    Define a \textsl{guided batch incremental digraph} to be a sequence of updates, where each update contains such a batch $\{\overline V, \overline E\}$, a set of terminal states $\overline T$ and a set of closed vertices $\overline C$.
 
     \begin{enumerate}
         \item a set of new directed edge $\overline E$.
@@ -57,6 +63,7 @@ An incremental digraph is a sequence of directed graphs $G_0, G_1, \ldots, G_t$ 
 \end{definition}
 
 \begin{table}
+    \centering
     \begin{tabular}{l|l}
         \hline
         Live & Some reachable state from $u$ is terminal. \\
@@ -68,3 +75,39 @@ An incremental digraph is a sequence of directed graphs $G_0, G_1, \ldots, G_t$ 
     \caption{Status of a vertex}
     \label{tab:status}
 \end{table}
+
+Taking this input, we consider that we got a batch of state updates via searching through the state machine. Since that the total number of states can be exponential, so it is not a valid way to wait until we reached every state inside the autometon then do the dead state detection for every state we have here. So, to detect dead state as soon as possible, we divide the graph into batches and we want to solve dead state detection as long as a batch of $close(u)$ occurs.
+
+\subsection{Relation to sequential algorithm}
+
+Notice that the minimum input for each batch can be limited to $\{e,\emptyset,\emptyset\}$ as an edge input, $\{\emptyset, {C(u)}, \emptyset\}$ as an \textsl{onclose call}, $\{\emptyset, \emptyset, {T(u)}\}$ as an \textsl{onTerminal} call in the sequential algorithm. So, to design a parallel algorithm for dead state detection, our idea is to do the sequential instructions as much as we can in parallel.
+
+\section{Algorithm}
+
+In this section we will introduce the parallel algorithm, and prove the correctness of the algorithm.
+\subsection{sequential solutions}
+% TODO: write a brief introduction of sequential solution so that we can take the terms from the CAV23 to introduce our algorithm.
+
+\subsection{algorithm}
+
+The processing for the dead state detection is very costly, since the total number of states for a certain verification problem can be exponential, so it is natural to consider parallelizing this process by process many states in parallel. However, we cannot process arbitrary vertices in parallel. For instance, if two adjacent \textsl{closed} state set their \textsl{succ} to each other, during the $OnClosed(u)$ and $OnClosed(v)$, we will construct a dis-joint set $\{u,v\}$ into the \textsl{EF} structure, which violates the property that each set in \textsl{EF} should have exactly 1 open vertex.
+
+So, we present our parallel dead state detection algorithm for processing each batch $\overline G=\{\overline V, \overline E\}$of update in parallel. We present the pseudocode of this in Alg. 2\ref{alg:parallel_dead_state_detection}. It has a existing graph $G$, a union find data structure that detects cycles, and another union find data structure that maintain the path for each state to reach a living state. 
+
+\textbf{Invariants}. Altogether, we respect the following invariants. \textsl{Successor} and \textsl{no cycles} describe the forest structure, and \textsl{edge representation} ensures that all edge in the input GBID are represented somehow in the current graph.
+
+\begin{enumerate}
+    \item \textsl{Merge equivalence}: For all states $u$ and $v$, if $UF.find(u)=UF.find(v)$, then $u$ and $v$ are strong connected and both closed.
+    \item \textsl{Status correctness}: For all $u$, $status(UF.find(u))$ equals the status of $u$.
+    \item \textsl{Successor edge}: If $x$ is unknown, then $succ(x)$ is defined and is an unknown or open state. If $x$ is open, then $succ(x)$ is not defined.
+    \item \textsl{No cycles}: There are no cycles among the set of edges $(x, UF.find(succ(x)))$, over all unknown and open canonical states $x$.
+    \item \textsl{Edge representation}: For all edges $(u,v)$ in the input GBID, at least one of the following holds: $(u,v)\in res(UF.find(v))$, $v=succ(UF.find(u))$, $UF.find(u)=UF.find(v)$, $u$ is live, or $v$ is dead.
+    \item \textsl{EF inter-edges}: For all \textsl{enquivalent} $u,v$, $(u,v)$ is in the EF if and only if $(u,v)=succ(UF.find(u))$ or $(v,u)=succ(UF.find(v))$.
+    \item \textsl{EF intra-edges}: For all unknown canonical states $x$, the set of edges $(u,v)$ 
+\end{enumerate}
+
+\subsection{correctness}
+
+Observe that the \textsl{EF} inter-edges constraints implies that \textsl{EF} only contains edges between unknown and open states, together with isolated trees. In the parallel algorithm, when collecting the possible dead states we remove interedges, so we preserve this invariants.
+
+Notice that after each round, we maintain that for each tree inside \textsl{EF}, there's only one open vertex. Which maintains the $EF$ invariants.
